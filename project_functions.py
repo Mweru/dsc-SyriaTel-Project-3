@@ -12,6 +12,52 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+
+#creating a class that will take the dataframe and relevant columns and visualize for both univariate visuals and bivariate visuals
+class visualizations:
+    def __init__(self, df, columns):
+        self.df = df
+        self.columns = columns
+    
+    #defining the univariate distribution plot function
+    def visualize_univariate(self, cols=3, bins=20):
+        
+        num_columns = len(self.columns)
+        rows = math.ceil(num_columns / cols)
+        
+        # Create subplots and flatten for easier iterations
+        fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 4 * rows), constrained_layout=True)
+        axes = axes.flatten()
+        
+        #Iterating through each column and visualizing it 
+        for i, column in enumerate(self.columns):
+            sns.distplot(self.df[column], bins=bins, ax=axes[i], kde=True, hist=True)
+            axes[i].set_title(f'Distribution of {column}')
+            axes[i].set_xlabel(column)
+            axes[i].set_ylabel('Density')
+            
+    #function will visualize countplots for each column againt the target column
+    def visualize_bivariate(self, target_column):
+        for column in self.columns:
+            plt.figure(figsize=(8, 5))
+            sns.countplot(x=column, hue=target_column, data=self.df, palette='Set2')
+            plt.title(f'Distribution of {column} by {target_column}')
+            plt.xlabel(column)
+            plt.ylabel('Count')
+            plt.legend(title=target_column, loc='upper right')
+            plt.show()
+            
+    #function will visualize a correlation matrix of the columns
+    def visualize_multivariate(self):
+        corr_mat = self.df.corr()
+        plt.subplots(figsize=(15,12))
+        sns.heatmap(corr_mat, annot=True, cmap='PuBu');
+        plt.xticks(rotation=90);
+        plt.yticks(rotation=0);
+        
+
+
+#building a class that will print model performance summaries when given the model, the test sample and predicted sample
 class model_metrics:
     def __init__(self, model, y_test, y_pred):
         self.model = model
@@ -22,7 +68,7 @@ class model_metrics:
         # building the confusion matrix
         cm = confusion_matrix(self.y_test, self.y_pred)
         
-        # Print the model metrics and confusion matrix
+        # Print the accuracy, f1, precision and recall scores
         print(f'{self.model} Model Metrics')
         print(f'______________________________')
         print(f'The accuracy score is {round(accuracy_score(self.y_test, self.y_pred), 3)}.')
@@ -38,67 +84,23 @@ class model_metrics:
         plt.title('Confusion Matrix');
 
         
-        
-class univariate_visualization:
-    def __init__(self, df, numerical_columns, cols=3, bins=20):
-        self.df = df
-        self.numerical_columns = numerical_columns
-        self.cols = cols
-        self.bins = bins
-        
-    def visualize(self):
-        num_columns = len(self.numerical_columns)
-        rows = math.ceil(num_columns / self.cols)
-        
-        # Create subplots
-        fig, axes = plt.subplots(rows, self.cols, figsize=(6 * self.cols, 4 * rows), constrained_layout=True)
-        # flattening for easier iteration
-        axes = axes.flatten()
-        
-        for i, column in enumerate(self.numerical_columns):
-            sns.distplot(self.df[column], bins=self.bins, ax=axes[i], kde=True, hist=True)
-            axes[i].set_title(f'Distribution of {column}')
-            axes[i].set_xlabel(column)
-            axes[i].set_ylabel('Density')
-            
-        # Hide any unused subplots
-        for j in range(i + 1, len(axes)):
-            axes[j].axis('off')
-
-## creating a class function that will visualize the categorical columns against the target column            
-class bivariate_visualization:
-    
-    def __init__(self, df, categorical_columns, target_column):
-        self.df = df
-        self.categorical_columns = categorical_columns
-        self.target_column = target_column
-    
-    def visualize(self):
-        for column in self.categorical_columns:
-            plt.figure(figsize=(8, 5))
-            sns.countplot(x=column, hue=self.target_column, data=self.df, palette='Set2')
-            plt.title(f'Distribution of {column} by {self.target_column}')
-            plt.xlabel(column)
-            plt.ylabel('Count')
-            plt.legend(title=self.target_column, loc='upper right')
-            plt.show()
-        
-        
-        
+#creating a class that will plot ROC curves for the models given the test values       
 class roc_curve_plotter:
     def __init__(self, y_test):
         self.y_test = y_test
         self.models = []
 
+    #function will take the model name, and predicted values
     def add_model(self, y_pred, model_name):
-        """
-        fpr= false positive rate
-        tpr= true positive rate
-        """
+  
+        #fpr= false positive rate
+        #tpr= true positive rate
         fpr, tpr, _ = roc_curve(self.y_test, y_pred)
         auc_score = auc(fpr, tpr)
+        #adds the model to a list of models
         self.models.append((fpr, tpr, auc_score, model_name))
 
+    #function plots each model's ROC curve in one figure
     def plot(self, figsize=(10, 8)):
         plt.figure(figsize=figsize)
 
@@ -118,15 +120,4 @@ class roc_curve_plotter:
         plt.show()
         
         
-
-class correlation:
-    def __init__(self, df):
-        self.df = df
-        
-    def plot_correlationMatrix(self):
-        corr_mat = self.df.corr()
-        plt.subplots(figsize=(15,12))
-        sns.heatmap(corr_mat, annot=True, cmap='PuBu');
-        plt.xticks(rotation=90);
-        plt.yticks(rotation=0);
 
